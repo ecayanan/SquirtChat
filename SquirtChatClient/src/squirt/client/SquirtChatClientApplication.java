@@ -1,5 +1,6 @@
 package squirt.client;
 
+// import
 import java.net.URISyntaxException;
 import java.util.Scanner;
 
@@ -7,6 +8,10 @@ import javax.jms.JMSException;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
+import javax.jms.Topic;
+import javax.jms.TopicPublisher;
+import javax.jms.TopicSession;
+import javax.jms.TopicSubscriber;
 
 import org.apache.activemq.ActiveMQConnection;
 
@@ -49,14 +54,22 @@ public class SquirtChatClientApplication {
 	private static SquirtChatClient wireClient() throws JMSException,
 			URISyntaxException {
 		ActiveMQConnection connection = ActiveMQConnection.makeConnection(
-		/* Constants.USERNAME, Constants.PASSWORD, */Constants.ACTIVEMQ_URL);
+		/* Constants.USERNAME, Constants.PASSWORD, */
+		Constants.ACTIVEMQ_URL);
 		connection.start();
 		CloseHook.registerCloseHook(connection);
 		Session session = connection.createSession(false,
 				Session.AUTO_ACKNOWLEDGE);
+		
+		TopicSession topicSession = connection.createTopicSession( false, 
+				Session.AUTO_ACKNOWLEDGE);
+		Topic topic = topicSession.createTopic("TESTNAME");
+		TopicSubscriber subscriber = topicSession.createSubscriber(topic);
+		TopicPublisher publisher = topicSession.createPublisher(topic);
+		
 		Queue destQueue = session.createQueue(Constants.QUEUENAME);
 		MessageProducer producer = session.createProducer(destQueue);
-		return new SquirtChatClient(producer, session);
+		return new SquirtChatClient(producer, session, subscriber, publisher, connection);
 	}
 
 	public static void main(String[] args) {
