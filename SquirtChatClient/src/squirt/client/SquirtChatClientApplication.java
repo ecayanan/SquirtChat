@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.Scanner;
 
 import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
@@ -58,18 +59,22 @@ public class SquirtChatClientApplication {
 		Constants.ACTIVEMQ_URL);
 		connection.start();
 		CloseHook.registerCloseHook(connection);
+		
+		// for communication via queues (ie one-on-one communication)
 		Session session = connection.createSession(false,
 				Session.AUTO_ACKNOWLEDGE);
+		Queue destQueue = session.createQueue(Constants.QUEUENAME);
+		MessageProducer producer = session.createProducer(destQueue);
+		MessageConsumer consumer = session.createConsumer(destQueue); // may not need
 		
+		// for communication via topics (broadcasting and subset broadcasting ie chatrooms)
 		TopicSession topicSession = connection.createTopicSession( false, 
 				Session.AUTO_ACKNOWLEDGE);
 		Topic topic = topicSession.createTopic("TESTNAME");
 		TopicSubscriber subscriber = topicSession.createSubscriber(topic);
 		TopicPublisher publisher = topicSession.createPublisher(topic);
 		
-		Queue destQueue = session.createQueue(Constants.QUEUENAME);
-		MessageProducer producer = session.createProducer(destQueue);
-		return new SquirtChatClient(producer, session, subscriber, publisher, connection);
+		return new SquirtChatClient(producer, consumer, session, subscriber, publisher, connection);
 	}
 
 	public static void main(String[] args) {
