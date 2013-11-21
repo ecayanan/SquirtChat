@@ -46,6 +46,8 @@ public class SquirtChatClient implements MessageListener {
 		
 		try {
 			consumer.setMessageListener(this);
+			subscriber.setMessageListener(this);
+
 		} catch (JMSException e ) {
 			e.printStackTrace();
 		}

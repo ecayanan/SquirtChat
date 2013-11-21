@@ -114,7 +114,12 @@ public class SquirtChatClientApplication {
 	        	String receiver;
 	        	receiver = scanIn.nextLine();
 	        	
-		        
+		        if(receiver.equals("all"))
+		        {
+		        	client.send(message);
+		        	System.out.println(client.getName() + "Message Sent!");		        	
+		        	continue;
+		        }
 	
 		        	//scanIn.close();
 		        	
