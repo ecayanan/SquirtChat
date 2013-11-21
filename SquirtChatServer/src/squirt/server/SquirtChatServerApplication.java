@@ -52,6 +52,7 @@ public class SquirtChatServerApplication {
 		broker.addConnector(Constants.ACTIVEMQ_URL);
 		broker.setPersistent(false);
 		broker.start();
+		
 		AnnotationConfigApplicationContext context = 
 		          new AnnotationConfigApplicationContext(SquirtChatServerApplication.class);
 		
