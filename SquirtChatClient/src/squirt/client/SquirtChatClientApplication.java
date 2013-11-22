@@ -77,7 +77,7 @@ public class SquirtChatClientApplication {
 		Queue destQueue = session.createQueue(user);
 		MessageProducer producer = session.createProducer(destQueue);
 		MessageConsumer consumer = session.createConsumer(destQueue);
-		return new SquirtChatClient(producer, session, subscriber, publisher, connection, user,consumer);
+		return new SquirtChatClient(producer, session, subscriber, publisher, connection, user,consumer,topicSession);
 	}
 
 	public static void main(String[] args) {
@@ -90,7 +90,9 @@ public class SquirtChatClientApplication {
 			String user;
 			Scanner scanIn = new Scanner(System.in);
 			user = scanIn.nextLine();
-	        System.out.println("ChatClient wired.");			
+	        System.out.println("ChatClient wired.");
+	        
+	        String mode = "";
 			/* 
 			 * We have some other function wire the ChatClient 
 			 * to the communication platform
@@ -99,9 +101,19 @@ public class SquirtChatClientApplication {
 			SquirtChatClient client = wireClient(user);
 	        System.out.println("ChatClient wired.");
 	        boolean quit = false;
+	        
+	        System.out.println("Enter a message to send: ");
+	        System.out.println("Select a mode to use:");
+	        System.out.println("-gc to join a group chat");
+	        System.out.println("-gm to send a group message");
+	        System.out.println("-m to send a message to an individual");
+	        System.out.println("-b to broadcast a message");
+	        System.out.println("-r to reply to the last message");
+	        System.out.println("-h or HALP to see this message again");
+	        System.out.println("-q or QUIT  to quit");
 	        while(quit == false)
 	        {
-		        System.out.println("Enter a message to send: ");
+		        
 	        	String message;
 	        	message = scanIn.nextLine();
 	        	
@@ -110,50 +122,129 @@ public class SquirtChatClientApplication {
 		        	quit = true;
 		        	break;
 		        }
-	        	System.out.println("Who to send to?");
-	        	String receiver;
-	        	receiver = scanIn.nextLine();
-	        	
-		        if(receiver.equals("all"))
-		        {
-		        	client.send(message);
-		        	System.out.println(client.getName() + "Message Sent!");		        	
-		        	continue;
-		        }
-	
-		        	//scanIn.close();
-		        	
-		        	/* 
-		        	 * Now we can happily send messages around
-		        	 */
-	        	int position = 0;
-	        	while(receiver.length() != 0)
+	        	else if(message.equals("-gc"))
 	        	{
-	        		if(receiver.indexOf(';') == -1)
+	        		System.out.println("Would you like to create a chatroom or join an existing chatroom?");
+	        		System.out.println("'Create ChatroomName' or 'Join ChatroomName'");
+	        		message = scanIn.nextLine();
+	        		String firstword = message.substring(0, message.indexOf(' '));
+	        		String secondword = message.substring(message.indexOf(' ') + 1, message.length());
+	        		System.out.println(firstword);
+	        		System.out.println(secondword);
+	        		if(firstword.equals("Create"))
 	        		{
+	        			client.setPublisher(secondword);
+	        			client.setSubscriber(secondword);
+	        			System.out.println("Who do you want to invite (Separate names with a semicolon, with no "
+	        					+ "spaces)?");
+	        			String receiver = scanIn.nextLine();
 	        			
-	        			client.setProducer(receiver);
-			        	client.sendUser(message);
-			        	System.out.println(client.getName() + "Message Sent!");
-			        	receiver = "";
+		        		int position = 0;
+			        	while(receiver.length() != 0)
+			        	{
+			        		if(receiver.indexOf(';') == -1)
+			        		{
+			        			
+			        			client.setProducer(receiver);
+					        	client.sendUser("Join" + secondword);
+					        	System.out.println(client.getName() + "Message Sent!");
+					        	receiver = "";
+			        		}
+			        		else
+			        		{
+			        			
+			        			String n = receiver.substring(0,receiver.indexOf(';'));
+			        			
+			        			position = receiver.indexOf(';') + 1;
+			        			
+			        			client.setProducer(n);
+					        	client.sendUser("Join " + secondword);
+					        	System.out.println(client.getName() + "Message Sent!");
+					        	receiver = receiver.substring(position, receiver.length());
+					        	
+					        	
+			        		}
+				        	
+				        	//message = scanIn.nextLine();
+			        	}
 	        		}
+	        		else if(firstword.equals("Join"))
+	        		{
+	        			client.setPublisher(secondword);
+	        			client.setSubscriber(secondword);
+	        		}
+	        		
 	        		else
 	        		{
-	        			
-	        			String n = receiver.substring(0,receiver.indexOf(';'));
-	        			
-	        			position = receiver.indexOf(';') + 1;
-	        			
-	        			client.setProducer(n);
-			        	client.sendUser(message);
-			        	System.out.println(client.getName() + "Message Sent!");
-			        	receiver = receiver.substring(position, receiver.length());
-			        	
-			        	
+	        			System.out.println("Dun fucking goofed");
+	        			break;
 	        		}
-		        	
-		        	//message = scanIn.nextLine();
+	        		message = scanIn.nextLine();
+	        		client.send(message);
+	        		
 	        	}
+	        	else if(message.equals("-m"))
+	        	{
+	        		System.out.println("What message would you like to send?");
+	        		message = scanIn.nextLine();
+		        	System.out.println("Who to send to?");
+		        	String receiver;
+		        	receiver = scanIn.nextLine();
+		        	
+		        	client.setProducer(receiver);
+		        	client.sendUser(message);
+		        	System.out.println(client.getName() + "Message Sent!");
+		        	
+	        	}
+	        	
+	        	else if(message.equals("-gm"))
+	        	{
+	        		System.out.println("What message would you like to send?");
+	        		message = scanIn.nextLine();
+	        		System.out.println("Who to send to?");
+		        	String receiver;
+		        	receiver = scanIn.nextLine();
+		        	
+		        	
+	        		int position = 0;
+		        	while(receiver.length() != 0)
+		        	{
+		        		if(receiver.indexOf(';') == -1)
+		        		{
+		        			
+		        			client.setProducer(receiver);
+				        	client.sendUser(message);
+				        	System.out.println(client.getName() + "Message Sent!");
+				        	receiver = "";
+		        		}
+		        		else
+		        		{
+		        			
+		        			String n = receiver.substring(0,receiver.indexOf(';'));
+		        			
+		        			position = receiver.indexOf(';') + 1;
+		        			
+		        			client.setProducer(n);
+				        	client.sendUser(message);
+				        	System.out.println(client.getName() + "Message Sent!");
+				        	receiver = receiver.substring(position, receiver.length());
+				        	
+				        	
+		        		}
+			        	
+			        	//message = scanIn.nextLine();
+		        	}
+	        	}
+	        	
+	        	
+	        	else if(message.equals("-b"))
+	        	{
+	        		message = scanIn.nextLine();
+	        		client.send(message);
+		        	System.out.println(client.getName() + "Message Sent!");		        	
+		        	continue;
+	        		
+	        	}        	
 	        }   
 	        scanIn.close();
 	        System.exit(0);
