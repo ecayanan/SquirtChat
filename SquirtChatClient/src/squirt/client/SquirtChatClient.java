@@ -102,5 +102,6 @@ public class SquirtChatClient implements MessageListener {
 		Topic destQueue = topicSession.createTopic(chatRoom);		
 		TopicSubscriber subscriber = topicSession.createSubscriber(destQueue);
 		this.subscriber = subscriber;
+		this.subscriber.setMessageListener(this);
 	}
 }

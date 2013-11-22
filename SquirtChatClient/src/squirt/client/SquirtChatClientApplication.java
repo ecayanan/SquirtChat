@@ -179,9 +179,11 @@ public class SquirtChatClientApplication {
 	        			System.out.println("Dun fucking goofed");
 	        			break;
 	        		}
+	        		while(true)
+	        		{
 	        		message = scanIn.nextLine();
 	        		client.send(message);
-	        		
+	        		}
 	        	}
 	        	else if(message.equals("-m"))
 	        	{
