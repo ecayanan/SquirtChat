@@ -26,7 +26,8 @@ public class SquirtChatServerApplication {
     
     @Bean
     MessageListenerAdapter receiver() {
-        return new MessageListenerAdapter(new Server()) {{
+        return new MessageListenerAdapter(new Server())
+        {{
             setDefaultListenerMethod("receive");
         }};
     }

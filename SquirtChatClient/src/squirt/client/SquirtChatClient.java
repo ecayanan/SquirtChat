@@ -28,6 +28,11 @@ public class SquirtChatClient implements MessageListener {
 	private List<String> userList;
 	private String user; //Using a string for user
 	private TopicSession topicSession;
+	private TopicSubscriber broadcastSubscriber;
+	private TopicPublisher broadcastPublisher;
+	//private MessageProducer listOnlineProducer;
+	//private MessageConsumer listOnlineConsumer; // might not need this guy
+	//private MessageProducer loginProducer;
 	
 	public SquirtChatClient(MessageProducer producer, Session session, 
 			TopicSubscriber subscriber, TopicPublisher publisher, 
@@ -37,6 +42,7 @@ public class SquirtChatClient implements MessageListener {
 		this.consumer = consumer;
 		this.session = session;
 		this.subscriber = subscriber;
+		
 		this.publisher = publisher;
 		this.connection = connection;
 		this.topicSession = topicSession;
@@ -55,16 +61,65 @@ public class SquirtChatClient implements MessageListener {
 		} catch (JMSException e ) {
 			e.printStackTrace();
 		}
+		
+		Topic destQueue;
+	
+		// creating a broadcast subscriber
+		try {
+			destQueue = topicSession.createTopic("BROADCAST");
+			TopicSubscriber broadcastSubscriber = topicSession.createSubscriber(destQueue);
+			this.broadcastSubscriber = broadcastSubscriber;
+			this.broadcastSubscriber.setMessageListener(this);
+		} catch (JMSException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		// creating a broadcast publisher
+		try {
+			destQueue = topicSession.createTopic("BROADCAST");
+			TopicPublisher broadcastPublisher = topicSession.createPublisher(destQueue);
+			this.broadcastPublisher = broadcastPublisher;
+		} catch (JMSException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// tell server I wish to log in
+		try {
+			setProducer("LOGIN");
+			sendUser(user);
+		} catch (JMSException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	} 
+	
+	// LIST OF COMMANDS
 	
 	public void send(String msg) throws JMSException {
 		//producer.send(session.createTextMessage(msg));
 		publisher.send(session.createTextMessage(msg));
 	}
 	
+	//public void getList() throws JMSException {
+	//	listOnlineProducer.send(session.createTextMessage(user));
+	//}
+	
+	//public void loggedIn() throws JMSException {
+	//	loginProducer.send(session.createTextMessage(user));
+	//}
+	
+	public void broadcast(String msg) throws JMSException{
+		broadcastPublisher.send(session.createTextMessage(msg));
+	}
 	public void sendUser(String msg) throws JMSException{
 		producer.send(session.createTextMessage(msg));
 	}
+	
+	// Listener method
 	
 	public void onMessage( Message input ) {
 		TextMessage retval = (TextMessage) input;
@@ -75,6 +130,9 @@ public class SquirtChatClient implements MessageListener {
 			e.printStackTrace();
 		}
 	}
+	
+	// others
+	
 	public void setName(String usr){
 		this.user = usr;
 	}

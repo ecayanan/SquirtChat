@@ -79,9 +79,9 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		tfSend.setColumns(10);
 		
 		textArea = new JTextArea();
-		sl_contentPane.putConstraint(SpringLayout.NORTH, textArea, 20, SpringLayout.NORTH, contentPane);
+		sl_contentPane.putConstraint(SpringLayout.NORTH, textArea, 23, SpringLayout.NORTH, contentPane);
 		sl_contentPane.putConstraint(SpringLayout.SOUTH, textArea, -18, SpringLayout.NORTH, tfSend);
-		sl_contentPane.putConstraint(SpringLayout.EAST, textArea, -144, SpringLayout.EAST, contentPane);
+		sl_contentPane.putConstraint(SpringLayout.EAST, textArea, -138, SpringLayout.EAST, contentPane);
 		textArea.setEnabled(false);
 		contentPane.add(textArea);
 		
