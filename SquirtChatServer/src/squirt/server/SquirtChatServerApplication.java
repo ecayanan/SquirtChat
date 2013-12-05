@@ -3,6 +3,7 @@ package squirt.server;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Message;
+import javax.jms.MessageProducer;
 import javax.jms.Session;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -17,7 +18,14 @@ import org.springframework.jms.listener.adapter.MessageListenerAdapter;
 
 
 public class SquirtChatServerApplication {
+	
+	static MessageCreator messageCreator;
 
+	@Bean
+	Server makeServer() {
+		return new Server();
+	}
+	
     @Bean
     ConnectionFactory connectionFactory() {
         return new CachingConnectionFactory(
@@ -25,8 +33,8 @@ public class SquirtChatServerApplication {
     }
     
     @Bean
-    MessageListenerAdapter receiver() {
-        return new MessageListenerAdapter(new Server())
+    MessageListenerAdapter receiver(Server myServer) {
+        return new MessageListenerAdapter(myServer)
         {{
             setDefaultListenerMethod("receive");
         }};
@@ -47,7 +55,6 @@ public class SquirtChatServerApplication {
         return new JmsTemplate(connectionFactory);
     }
     
-
 	public static void main(String[] args) throws Throwable {
 		BrokerService broker = new BrokerService();
 		broker.addConnector(Constants.ACTIVEMQ_URL);
@@ -57,18 +64,18 @@ public class SquirtChatServerApplication {
 		AnnotationConfigApplicationContext context = 
 		          new AnnotationConfigApplicationContext(SquirtChatServerApplication.class);
 		
-		MessageCreator messageCreator = new MessageCreator() {
-			public Message createMessage(Session session) throws JMSException {
-				return session.createTextMessage("ping!");
-			}
-        }; 
         
         JmsTemplate jmsTemplate = context.getBean(JmsTemplate.class);
-        System.out.println("Sending a new message:");
-        jmsTemplate.send(Constants.QUEUENAME, messageCreator);
 
-        //context.close();
 	}
-
-
+    
+    public MessageCreator getMessageCreator(final String toSend) {
+    	messageCreator = new MessageCreator() {
+			public Message createMessage(Session session) throws JMSException {
+				return session.createTextMessage(toSend);
+			}
+    	};
+    	
+    	return messageCreator;
+    }
 }
