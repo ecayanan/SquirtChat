@@ -30,9 +30,6 @@ public class SquirtChatClient implements MessageListener {
 	private TopicSession topicSession;
 	private TopicSubscriber broadcastSubscriber;
 	private TopicPublisher broadcastPublisher;
-	//private MessageProducer listOnlineProducer;
-	//private MessageConsumer listOnlineConsumer; // might not need this guy
-	//private MessageProducer loginProducer;
 	
 	public SquirtChatClient(MessageProducer producer, Session session, 
 			TopicSubscriber subscriber, TopicPublisher publisher, 
@@ -47,12 +44,6 @@ public class SquirtChatClient implements MessageListener {
 		this.connection = connection;
 		this.topicSession = topicSession;
 		this.user = user;
-		/*try {
-			subscriber.setMessageListener(this);
-		} catch (JMSException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
 		
 		try {
 			consumer.setMessageListener(this);
@@ -104,14 +95,6 @@ public class SquirtChatClient implements MessageListener {
 		publisher.send(session.createTextMessage(msg));
 	}
 	
-	//public void getList() throws JMSException {
-	//	listOnlineProducer.send(session.createTextMessage(user));
-	//}
-	
-	//public void loggedIn() throws JMSException {
-	//	loginProducer.send(session.createTextMessage(user));
-	//}
-	
 	public void broadcast(String msg) throws JMSException{
 		broadcastPublisher.send(session.createTextMessage(msg));
 	}
@@ -124,7 +107,7 @@ public class SquirtChatClient implements MessageListener {
 	public void onMessage( Message input ) {
 		TextMessage retval = (TextMessage) input;
 		try {
-			System.out.println("client received message: " + retval.getText());
+			System.out.println( retval.getText() );
 		} catch (JMSException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
