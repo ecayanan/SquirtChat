@@ -25,7 +25,7 @@ public class SquirtChatClient implements MessageListener {
 
 	private Session session;
 	private ActiveMQConnection connection;
-	private ArrayList<String> userList;
+	public ArrayList<String> userList = new ArrayList<String>();
 	private String user; //Using a string for user
 	
 	private TopicSession topicSession;
@@ -38,6 +38,7 @@ public class SquirtChatClient implements MessageListener {
 	private MessageProducer producer;
 	private MessageConsumer consumer;
 	private Destination destQueue;
+	public String buf;
 
 	
 	public SquirtChatClient(String user, ActiveMQConnection connection ) {
@@ -142,11 +143,19 @@ public class SquirtChatClient implements MessageListener {
 	
 	// Listener method
 	
+	@SuppressWarnings("unchecked")
 	public void onMessage( Message input ) {
 		if( input instanceof ObjectMessage ) {
-			System.out.println("This is what you requested: ");
 			try {
-				System.out.println(((ObjectMessage) input).getObject());
+				System.out.println(((ObjectMessage) input).getObject().toString());
+			} catch (JMSException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			ArrayList<String> a = new ArrayList<String>();
+			
+			try {
+				this.userList = ( ArrayList<String> ) ((ObjectMessage) input).getObject();
 			} catch (JMSException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -154,7 +163,8 @@ public class SquirtChatClient implements MessageListener {
 		}
 		else if( input instanceof TextMessage )
 			try {
-				System.out.println(((TextMessage)input).getText());
+				// save this to buffer
+				buf = ((TextMessage)input).getText();
 			} catch (JMSException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

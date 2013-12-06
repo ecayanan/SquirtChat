@@ -37,8 +37,13 @@ public class Server implements ApplicationContextAware {
     	
 		if(firstword.equals("addUser"))
 		{
+			System.out.println("maybe add user");
 			onlineUsers.add(secondword);
-			System.out.println("added user");
+			for( String user: onlineUsers) {
+				System.out.println("online user list: " + onlineUsers.toString());
+				sendObjectMessage(user, onlineUsers);
+			}
+			System.out.println("added user: " + secondword);
 		}
 		
 		else if(firstword.equals("addChat"))
@@ -62,7 +67,6 @@ public class Server implements ApplicationContextAware {
 	private void sendObjectMessage(String destination, ArrayList<String> array) {
 		context.getBean(JmsTemplate.class).send(destination, 
 				context.getBean(SquirtChatServerApplication.class).getObjectMessageCreator(array) );
-		
 	}
 	
 
