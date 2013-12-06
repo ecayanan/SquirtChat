@@ -55,29 +55,11 @@ public class SquirtChatClientApplication {
 	 */
 	private static SquirtChatClient wireClient(String user) throws JMSException,
 			URISyntaxException {
-		ActiveMQConnection connection = ActiveMQConnection.makeConnection(
-		/* Constants.USERNAME, Constants.PASSWORD, */
-		Constants.ACTIVEMQ_URL);
+		ActiveMQConnection connection = ActiveMQConnection.makeConnection( Constants.ACTIVEMQ_URL);
 		connection.start();
 		CloseHook.registerCloseHook(connection);
 		
-		// for communication via queues (ie one-on-one communication)
-		Session session = connection.createSession(false,
-				Session.AUTO_ACKNOWLEDGE);
-
-		//MessageConsumer consumer = session.createConsumer(destQueue); // may not need
-		
-		// for communication via topics (broadcasting and subset broadcasting ie chatrooms)
-		TopicSession topicSession = connection.createTopicSession( false, 
-				Session.AUTO_ACKNOWLEDGE);
-		Topic topic = topicSession.createTopic("TESTNAME");
-		TopicSubscriber subscriber = topicSession.createSubscriber(topic);
-		TopicPublisher publisher = topicSession.createPublisher(topic);
-		
-		Queue destQueue = session.createQueue(user);
-		MessageProducer producer = session.createProducer(destQueue);
-		MessageConsumer consumer = session.createConsumer(destQueue);
-		return new SquirtChatClient(producer, session, subscriber, publisher, connection, user,consumer,topicSession);
+		return new SquirtChatClient( user, connection );
 	}
 
 	private void quit() {
@@ -95,14 +77,17 @@ public class SquirtChatClientApplication {
     	String secondword = message.substring(message.indexOf(' ') + 1, message.length());
     	System.out.println(firstword);
     	System.out.println(secondword);
+    	
     	if(firstword.equals("Create"))
     	{
-    		client.setPublisher(secondword);
-    		client.setSubscriber(secondword);
+    		client.setChatPublisher(secondword);
+    		client.setChatSubscriber(secondword);
+
     		System.out.println("Who do you want to invite (Separate names with a semicolon, with no "
     				+ "spaces)?");
     		String receiver = scanIn.nextLine();
-    			
+    		client.sendChatroom(secondword);
+    		
         	int position = 0;
 	       	while(receiver.length() != 0)
 	       	{
@@ -110,8 +95,8 @@ public class SquirtChatClientApplication {
 	       		{
 	        			
 	       			client.setProducer(receiver);
-		        	client.sendUser("Join" + secondword);
-		        	System.out.println(client.getName() + "Message Sent!");
+		        	client.send("Join" + secondword);
+		        	System.out.println(client.getName() + ": Message Sent!");
 		        	receiver = "";
 	       		}
 	       		else
@@ -122,10 +107,9 @@ public class SquirtChatClientApplication {
 	       			position = receiver.indexOf(';') + 1;
 	        			
 	       			client.setProducer(n);
-		        	client.sendUser("Join " + secondword);
-		        	System.out.println(client.getName() + "Message Sent!");
+		        	client.send("Join " + secondword);
+		        	System.out.println(client.getName() + ": Message Sent!");
 		        	receiver = receiver.substring(position, receiver.length());
-			        	
 			        	
 	       		}
 		        	
@@ -134,19 +118,19 @@ public class SquirtChatClientApplication {
     		}
     		else if(firstword.equals("Join"))
     		{
-    			client.setPublisher(secondword);
-    			client.setSubscriber(secondword);
+    			client.setChatPublisher(secondword);
+    			client.setChatSubscriber(secondword);
     		}
     		
     		else
     		{
-    			System.out.println("Dun fucking goofed");
+    			System.out.println("Dun goofed");
 
     		}
-    		while(message.equals("quit"))
+    		while(!message.equals("quit"))
     		{
 	    		message = scanIn.nextLine();
-	    		client.send(message);
+	    		client.groupChatSend(message);
     		}
     	//}
 	}
@@ -162,7 +146,7 @@ public class SquirtChatClientApplication {
 	    	receiver = scanIn.nextLine();
 	    	
 	    	client.setProducer(receiver);
-	    	client.sendUser(message);
+	    	client.send(message);
 	    	System.out.println(client.getName() + "Message Sent!");	
 		}
 	}
@@ -215,9 +199,30 @@ public class SquirtChatClientApplication {
 			//client.setPublisher("TESTNAME");
 			//client.setSubscriber("TESTNAME");	        		
 			message = scanIn.nextLine();
-			client.send(message);
+			client.broadcast(message);
 	    	System.out.println(client.getName() + "Message Sent!");		        	
 		}
+	}
+	
+	private static void getList(SquirtChatClient client) {
+		try {
+			client.getUserList();//send("getList;"+client.getName());
+		} catch (JMSException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	private static void printHelp()
+	{
+        System.out.println("Select a mode to use:");
+        System.out.println("-gc to join a group chat");
+        System.out.println("-gm to send a group message");
+        System.out.println("-gl to get login list");
+        System.out.println("-m to send a message to an individual");
+        System.out.println("-b to broadcast a message");
+        System.out.println("-r to reply to the last message");
+        System.out.println("-h or HALP to see this message again");
+        System.out.println("-q or QUIT  to quit");
 	}
 	public static void main(String[] args) {
 		try {
@@ -245,6 +250,8 @@ public class SquirtChatClientApplication {
 	        System.out.println("Select a mode to use:");
 	        System.out.println("-gc to join a group chat");
 	        System.out.println("-gm to send a group message");
+	        System.out.println("-gl to get login list");
+	        System.out.println("-gcl to get chatroom list");
 	        System.out.println("-m to send a message to an individual");
 	        System.out.println("-b to broadcast a message");
 	        System.out.println("-r to reply to the last message");
@@ -266,7 +273,6 @@ public class SquirtChatClientApplication {
 	        	else if(message.equals("-m"))
 	        	{
 	        		IMessage( message, scanIn, client );
-		        	
 	        	}
 	        	
 	        	else if( message.equals("-gc")) {
@@ -276,13 +282,29 @@ public class SquirtChatClientApplication {
 	        	{
 	        		GMessage(message,scanIn,client);
 	        	}
+	        	else if( message.equals("-gl"))
+	        	{
+	        		client.getUserList();
+	        	}
+	        	else if( message.equals("-gcl"))
+	        	{
+	        		client.getChatList();
+	        	}
 	        	
 	        	
 	        	else if(message.equals("-b"))
 	        	{
 
 	        		broadcastMessage(message,scanIn,client);
-	        	}        	
+	        	} 
+	        	else if(message.equals("-h"))
+	        	{
+	        		printHelp();
+	        	}
+	        	else
+	        	{
+	        		printHelp();
+	        	}
 	        }   
 	        scanIn.close();
 	        System.exit(0);
@@ -295,4 +317,5 @@ public class SquirtChatClientApplication {
 		}
 
 	}
+
 }
