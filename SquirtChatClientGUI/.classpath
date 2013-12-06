@@ -2,7 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
-	<classpathentry kind="lib" path="/home/linux/ieng6/oce/72/jks001/.m2/repository/org/apache/activemq/activemq-all/5.8.0/activemq-all-5.8.0.jar">
+	<classpathentry kind="lib" path="C:/Users/Justin Tang/.m2/repository/org/apache/activemq/activemq-all/5.8.0/activemq-all-5.8.0.jar">
 		<attributes>
 			<attribute name="maven.pomderived" value="true"/>
 			<attribute name="maven.groupId" value="org.apache.activemq"/>
