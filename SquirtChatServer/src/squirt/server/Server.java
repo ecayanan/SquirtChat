@@ -18,29 +18,50 @@ public class Server implements ApplicationContextAware {
 	
 	private ApplicationContext context;
 	private ArrayList<String> onlineUsers = new ArrayList<String>();
+	private ArrayList<String> chatroomList = new ArrayList<String>();
 	
 	public void receive(String msg) {
+		/*
 		System.out.println(msg);
 		if( msg.indexOf(';') == -1) {
 			onlineUsers.add(msg);
-			System.out.println("adding user");
+			System.out.println("adding user: " + msg);
+		} */
+		if( msg.indexOf(';') == -1 ) {
+			System.out.println("ODD!");
+			return;
 		}
-		else {
+		
+    	String firstword = msg.substring(0, msg.indexOf(';'));
+    	String secondword = msg.substring(msg.indexOf(';') + 1, msg.length());		
+    	
+		if(firstword.equals("addUser"))
+		{
+			onlineUsers.add(secondword);
+			System.out.println("added user");
+		}
+		
+		else if(firstword.equals("addChat"))
+		{
+			chatroomList.add(secondword);
+			System.out.println("added chatroom");
+		}
+		
+		else if(firstword.equals("getChat"))
+		{
+			System.out.println("returning chatroom list");
+			sendObjectMessage(secondword, chatroomList);
+		}
+		
+		else if(firstword.equals("getList")){
 			System.out.println("received a call to retrieve list");
-			String firstword = msg.substring(0, msg.indexOf(';'));
-			if( firstword.equals("getList") ) {
-		    	String destination = msg.substring(msg.indexOf(';') + 1, msg.length());
-		    	System.out.println("destination: " +destination);
-		    	
-		    	// send object list also
-		    	sendObjectMessage(destination);
-			}
+	    	sendObjectMessage(secondword, onlineUsers);
 		}
 	}
 
-	private void sendObjectMessage(String destination) {
+	private void sendObjectMessage(String destination, ArrayList<String> array) {
 		context.getBean(JmsTemplate.class).send(destination, 
-				context.getBean(SquirtChatServerApplication.class).getObjectMessageCreator(onlineUsers) );
+				context.getBean(SquirtChatServerApplication.class).getObjectMessageCreator(array) );
 		
 	}
 	

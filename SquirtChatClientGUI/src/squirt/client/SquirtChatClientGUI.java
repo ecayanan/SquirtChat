@@ -62,6 +62,8 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 	private JList lstLog;
 	private JMenu menu; 
 	
+	String username;
+	
 	//TODO menu from above
 
 	// ADDED FROM SQUIRTCHATCLIENT APPLICATION
@@ -154,8 +156,9 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 
 		//SEND BUTTON////////////////////////////////////////////////////////////////////////////
 		btnSend = new JButton("Send");//TODO
+		/*
 		btnSend.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
+			/*public void actionPerformed(ActionEvent e) {
 				if(singleMode) {
 					String payload = tfSend.getText();
 					
@@ -188,7 +191,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 					
 			}
 		});
-		
+		*/
 		tfSend = new JTextField();
 		sl_contentPane.putConstraint(SpringLayout.WEST, tfSend, 18, SpringLayout.WEST, contentPane);
 		sl_contentPane.putConstraint(SpringLayout.SOUTH, tfSend, -1, SpringLayout.SOUTH, contentPane);
@@ -316,8 +319,11 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		contentPane.add(btnListMode);
 		lblSignedInAs.setVisible(false);
 		//createComponents();
-		//setListeners();
+		setListeners();
 		
+		
+		////////////JUSTIN LISTENERS////////////////////////////////////////////////////////////////////
+		/*
 		btnSend.addActionListener(new ActionListener(){ // TODO allows for enter to be used for button
 			//refactor / re-place code
 			public void actionPerformed(ActionEvent e){
@@ -333,8 +339,8 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 				}
 			}
 		});
-		
-
+		*/
+/*
 		btnSignIn.addActionListener(new ActionListener(){ // TODO allows for enter to be used for button
 			//refactor / re-place code
 			public void actionPerformed(ActionEvent e){
@@ -349,21 +355,8 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 				}
 			}
 		});
-		
-		
-		
-		
-		
-		
-		
-		
+*/
 	}
-		
-		
-		
-		
-		
-		
 		
 	
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -371,6 +364,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 	//////////////////DO NOT CROSS////////////////////////////////////////////////////////
 	
 	//////////////////////////////////////////////////////////////////////////////////////
+	/*
 	private void createComponents() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
@@ -381,7 +375,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		SpringLayout sl_contentPane = new SpringLayout();
 		contentPane.setLayout(sl_contentPane);
 		
-/*
+
 		final JButton btnSend = new JButton("Send");
 		btnSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -397,7 +391,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 					
 			}
 		});
-*/
+
 		
 		/////////////////////////////////////////////////
 		tfSend = new JTextField();
@@ -500,9 +494,11 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		btnSignIn.addActionListener(this);
 		
 	}
+	*/
 	
 	private void setListeners() {
 		btnSignIn.addActionListener(this);
+		btnSend.addActionListener(this);
 	}
 	
 	private void updateContents() {
@@ -511,23 +507,48 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 	}
 
 
+	private void signOut() throws JMSException, URISyntaxException {
+
+		username = null;
+		tfSignIn.setVisible(true);
+		contentPane.remove(lblSignedIn);
+		//lblSignedIn = new JLabel("");
+		//contentPane.add(lblSignedIn);
+		//lblSignedIn.setLocation(tfSignIn.getLocation());
+		btnSignIn.setText("Squirt in");
+		client = wireClient("");
+		updateContents();
+		
+		JOptionPane.showMessageDialog(null,
+				"You are now signed off" , "",
+				JOptionPane.PLAIN_MESSAGE);
+	}
+		
 	private void signIn() throws JMSException, URISyntaxException {
-		String username = tfSignIn.getText();
+		username = tfSignIn.getText();
 		tfSignIn.setVisible(false);
 		lblSignedIn = new JLabel("Squirted in as: " + username);
 		contentPane.add(lblSignedIn);
+		
 		lblSignedIn.setLocation(tfSignIn.getLocation());
+		
 		btnSignIn.setText("Squirt Out");
+		
 		client = wireClient(username);
 		updateContents();
 		
 		JOptionPane.showMessageDialog(null,
 				"You are now signed in" , "",
 				JOptionPane.PLAIN_MESSAGE);
+		
+		tfSignIn.setText("");
 	}
 	
+	
+	//////////////////ACTIONS///////////////////////////////////////////////////////////////////////
 	@Override
 	public void actionPerformed(ActionEvent e) {
+		//System.out.println(e.getActionCommand());
 		
 		if( e.getActionCommand() == "-m") {
 			singleMode = true;
@@ -561,157 +582,62 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 			// set list selectability to multiple
 			lstLog.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		}
-		
-		else if( e.getActionCommand() == "Squirt In" && !tfSignIn.getText().equals("")) {
+		else if( e.getActionCommand().equals("Squirt In")) {
 			try {
 				signIn();
-			} catch (JMSException | URISyntaxException e1) {
+			} catch (JMSException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (URISyntaxException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}
-		
-		else if( e.getActionCommand() == "Squirt Out") {
-			// tell server we're logging off
-			// register close hook
-			// exit everything out
+		else if( e.getActionCommand().equals("Squirt Out")) {
+			try {
+				signOut();
+			} catch (JMSException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (URISyntaxException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+		} else if( e.getActionCommand().equals("Send")){
+			if(singleMode) {
+				String payload = tfSend.getText();
+				
+				
+				//justin server stuff here
+				try
+				{
+					client.setProducer((String) lstLog.getSelectedValue());
+					client.sendUser(payload);
+				}
+				catch (JMSException e1)
+				{
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				
+				
+				textArea.append(payload + "//single msg\n");
+				//tfSend.setText(null);  //TODO put in deliverable
+			} else if(groupMode){
+				String payload = tfSend.getText();
+				textArea.append(payload + "//group msg\n");
+				//tfSend.setText(null);  //TODO put in deliverable
+			} else if(broadcastMode){
+				String payload = tfSend.getText();
+				textArea.append(payload + "//broadcast\n");
+				//tfSend.setText(null);  //TODO put in deliverable
+			} else;
+				
 		}
-		
 		
 		// and so on
 	}
-	private static void groupChat( String message, Scanner scanIn, SquirtChatClient client ) throws JMSException {
-		//if(message.equals("-gc"))
-    	//{
-    	System.out.println("Would you like to create a chatroom or join an existing chatroom?");
-    	System.out.println("'Create ChatroomName' or 'Join ChatroomName'");
-    	message = scanIn.nextLine();
-    	String firstword = message.substring(0, message.indexOf(' '));
-    	String secondword = message.substring(message.indexOf(' ') + 1, message.length());
-    	System.out.println(firstword);
-    	System.out.println(secondword);
-    	if(firstword.equals("Create"))
-    	{
-    		client.setPublisher(secondword);
-    		client.setSubscriber(secondword);
-    		System.out.println("Who do you want to invite (Separate names with a semicolon, with no "
-    				+ "spaces)?");
-    		String receiver = scanIn.nextLine();
-    			
-        	int position = 0;
-	       	while(receiver.length() != 0)
-	       	{
-	       		if(receiver.indexOf(';') == -1)
-	       		{
-	        			
-	       			client.setProducer(receiver);
-		        	client.sendUser("Join" + secondword);
-		        	System.out.println(client.getName() + "Message Sent!");
-		        	receiver = "";
-	       		}
-	       		else
-	       		{
-	       			
-	       			String n = receiver.substring(0,receiver.indexOf(';'));
-	        			
-	       			position = receiver.indexOf(';') + 1;
-	        			
-	       			client.setProducer(n);
-		        	client.sendUser("Join " + secondword);
-		        	System.out.println(client.getName() + "Message Sent!");
-		        	receiver = receiver.substring(position, receiver.length());
-			        	
-			        	
-	       		}
-		        	
-		        	//message = scanIn.nextLine();
-	       	}
-    		}
-    		else if(firstword.equals("Join"))
-    		{
-    			client.setPublisher(secondword);
-    			client.setSubscriber(secondword);
-    		}
-    		
-    		else
-    		{
-    			System.out.println("Dun fucking goofed");
 
-    		}
-    		while(message.equals("quit"))
-    		{
-	    		message = scanIn.nextLine();
-	    		client.send(message);
-    		}
-    	//}
-	}
-	
-	private static void IMessage(String message, Scanner scanIn, SquirtChatClient client) throws JMSException
-	{
-		while(!message.equals("quit"))
-		{
-			System.out.println("What message would you like to send?");
-			message = scanIn.nextLine();
-	    	System.out.println("Who to send to?");
-	    	String receiver;
-	    	receiver = scanIn.nextLine();
-	    	
-	    	client.setProducer(receiver);
-	    	client.sendUser(message);
-	    	System.out.println(client.getName() + "Message Sent!");	
-		}
-	}
-	private static void GMessage(String message, Scanner scanIn, SquirtChatClient client) throws JMSException
-	{
-		while(!message.equals("quit"))
-		{
-	   		System.out.println("What message would you like to send?");
-			message = scanIn.nextLine();
-			System.out.println("Who to send to?");
-	    	String receiver;
-	    	receiver = scanIn.nextLine();
-	    	
-	    	
-			int position = 0;
-	    	while(receiver.length() != 0)
-	    	{
-	    		if(receiver.indexOf(';') == -1)
-	    		{
-	    			
-	    			client.setProducer(receiver);
-		        	client.sendUser(message);
-		        	System.out.println(client.getName() + "Message Sent!");
-		        	receiver = "";
-	    		}
-	    		else
-	    		{
-	    			
-	    			String n = receiver.substring(0,receiver.indexOf(';'));
-	    			
-	    			position = receiver.indexOf(';') + 1;
-	    			
-	    			client.setProducer(n);
-		        	client.sendUser(message);
-		        	System.out.println(client.getName() + "Message Sent!");
-		        	receiver = receiver.substring(position, receiver.length());
-		        	
-		        	
-	    		}
-	        	
-	        	//message = scanIn.nextLine();
-	    	}
-		}
-	}
-	
-	private static void broadcastMessage(String message, Scanner scanIn, SquirtChatClient client) throws JMSException
-	{
-		while(!message.equals("quit"))
-		{
-			//client.setPublisher("TESTNAME");
-			//client.setSubscriber("TESTNAME");	        		
-			message = scanIn.nextLine();
-			client.send(message);
-	    	System.out.println(client.getName() + "Message Sent!");		        	
-		}
-	}
 }
