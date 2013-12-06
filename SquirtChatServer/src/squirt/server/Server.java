@@ -1,6 +1,9 @@
 package squirt.server;
 
 import java.util.ArrayList;
+
+import javax.jms.JMSException;
+import javax.jms.Message;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
@@ -17,32 +20,34 @@ public class Server implements ApplicationContextAware {
 	private ArrayList<String> onlineUsers = new ArrayList<String>();
 	
 	public void receive(String msg) {
-		
-		if( msg.indexOf(';') == -1)
+		System.out.println(msg);
+		if( msg.indexOf(';') == -1) {
 			onlineUsers.add(msg);
+			System.out.println("adding user");
+		}
 		else {
-			
+			System.out.println("received a call to retrieve list");
 			String firstword = msg.substring(0, msg.indexOf(';'));
-			
 			if( firstword.equals("getList") ) {
-		    	String user = msg.substring(msg.indexOf(';') + 1, msg.length());
-		  
+		    	String destination = msg.substring(msg.indexOf(';') + 1, msg.length());
+		    	System.out.println("destination: " +destination);
 		    	
-		    	for(String userInList: onlineUsers) {
-		    		context.getBean(JmsTemplate.class).send(user, 
-		    				context.getBean(SquirtChatServerApplication.class).getMessageCreator(userInList) );	
-		    		System.out.println("");
-		    	}
+		    	// send object list also
+		    	sendObjectMessage(destination);
 			}
 		}
 	}
+
+	private void sendObjectMessage(String destination) {
+		context.getBean(JmsTemplate.class).send(destination, 
+				context.getBean(SquirtChatServerApplication.class).getObjectMessageCreator(onlineUsers) );
+		
+	}
+	
 
 	@Override
 	public void setApplicationContext(ApplicationContext context)
 			throws BeansException {
 		this.context = context;	
-	}
-	
-	//@Autowired
-	
+	}	
 }

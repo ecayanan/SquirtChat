@@ -1,5 +1,8 @@
 package squirt.server;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -19,7 +22,8 @@ import org.springframework.jms.listener.adapter.MessageListenerAdapter;
 
 public class SquirtChatServerApplication {
 	
-	static MessageCreator messageCreator;
+	static CustomObjectMessageCreator objectMessageCreator;
+	static CustomStringMessageCreator stringMessageCreator;
 
 	@Bean
 	Server makeServer() {
@@ -31,6 +35,28 @@ public class SquirtChatServerApplication {
         return new CachingConnectionFactory(
                 new ActiveMQConnectionFactory(Constants.ACTIVEMQ_URL));
     }
+    
+    /*
+    
+    @Bean 
+    MessageListenerAdapter loginReceiver(Server myServer) {
+        return new MessageListenerAdapter(myServer)
+        {{
+            setDefaultListenerMethod("loginReceive");
+        }};
+    }
+    */
+    
+    /*
+    @Bean
+    SimpleMessageListenerContainer loginContainer(final MessageListenerAdapter messageListener, 
+    		final ConnectionFactory connectionFactory) {
+        return new SimpleMessageListenerContainer() {{
+            setMessageListener(messageListener);
+            setConnectionFactory(connectionFactory);
+            setDestinationName(Constants.LOGINQUEUE); // name of new login queue
+        }};
+    } */
     
     @Bean
     MessageListenerAdapter receiver(Server myServer) {
@@ -46,7 +72,7 @@ public class SquirtChatServerApplication {
         return new SimpleMessageListenerContainer() {{
             setMessageListener(messageListener);
             setConnectionFactory(connectionFactory);
-            setDestinationName(Constants.QUEUENAME);
+            setDestinationName(Constants.SERVERNAME);
         }};
     }
 
@@ -63,19 +89,22 @@ public class SquirtChatServerApplication {
 		
 		AnnotationConfigApplicationContext context = 
 		          new AnnotationConfigApplicationContext(SquirtChatServerApplication.class);
-		
         
+    	objectMessageCreator = new CustomObjectMessageCreator();
+    	stringMessageCreator = new CustomStringMessageCreator();
+		
         JmsTemplate jmsTemplate = context.getBean(JmsTemplate.class);
 
 	}
     
-    public MessageCreator getMessageCreator(final String toSend) {
-    	messageCreator = new MessageCreator() {
-			public Message createMessage(Session session) throws JMSException {
-				return session.createTextMessage(toSend);
-			}
-    	};
-    	
-    	return messageCreator;
+    @SuppressWarnings("resource")
+	public CustomStringMessageCreator getStringMessageCreator(final String toSend) {
+    	stringMessageCreator.setStringMessage(toSend);
+    	return stringMessageCreator;
+    }
+    
+    public CustomObjectMessageCreator getObjectMessageCreator(final ArrayList<String> toSend) {
+    	objectMessageCreator.setObjectMessage(toSend);
+    	return objectMessageCreator;
     }
 }
