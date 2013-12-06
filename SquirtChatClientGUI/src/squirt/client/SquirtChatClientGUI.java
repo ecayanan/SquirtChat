@@ -7,6 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Scanner;
 
 import javax.jms.JMSException;
@@ -66,8 +67,10 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 	private JMenu menu;
 	SpringLayout sl_contentPane;
 	
+	int users = 0;
 	String username;
 	private String selectedString;
+	private List<String> selectedUsers;
 	
 	//TODO menu from above
 
@@ -284,17 +287,24 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 		lstLog.addListSelectionListener(this);
 	}
 	
-	private void updateContents() {
+	public void updateContents() {
 		// update list
 		//System.out.println(client.userList.toString());
 		//System.out.println(client.userList.size());
 
 		if( !client.userList.isEmpty()) {
 			Object[] o = client.userList.toArray();
-			lstLog.setListData( o);
+			if(o.length != users)
+			{
+				users = o.length;
+				lstLog.setListData( o);
+			}
 		}
+		//System.out.println(client.buf);
+		if(client.buf != null && !(client.buf.equals("")))
+			textArea.append(client.buf + "\n");
+
 		
-		textArea.append(client.buf);
 		repaint();
 	}
 
@@ -327,8 +337,8 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 		btnSignIn.setText("Squirt Out");
 		
 		client = wireClient(username);
+		client.setGUI(this);
 
-		
 		JOptionPane.showMessageDialog(null,
 				"You are now signed in" , "",
 				JOptionPane.PLAIN_MESSAGE);
@@ -349,10 +359,12 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 			groupMode = false;
 			// and everything else is false
 			
-		
+			updateContents();
 			
 			// set list selectability to 1
-			lstLog.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+			if(lstLog.getSelectionMode() != ListSelectionModel.SINGLE_SELECTION)
+				
+					lstLog.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		}
 		
 		else if( e.getActionCommand() == "-b") {
@@ -367,8 +379,8 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 			singleMode = false;
 			broadcastMode = false;
 			groupMode = false;
-			
-			lstLog.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+			if(lstLog.getSelectionMode() != ListSelectionModel.MULTIPLE_INTERVAL_SELECTION)
+				lstLog.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		}
 		
 		else if( e.getActionCommand() == "-gm" ) {
@@ -377,7 +389,8 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 			broadcastMode = false;
 			
 			// set list selectability to multiple
-			lstLog.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+			if(lstLog.getSelectionMode() != ListSelectionModel.MULTIPLE_INTERVAL_SELECTION)
+				lstLog.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		}
 		else if( e.getActionCommand().equals("Squirt In")) {
 			try {
@@ -413,6 +426,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 					client.setProducer(selectedString);
 					client.send(payload);
 					updateContents();
+					client.buf = "";
 				}
 				catch (JMSException e1)
 				{
@@ -422,11 +436,29 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 				
 				
 				
-				textArea.append(payload + "//single msg\n");
+				textArea.append(client.getName() + ": " + payload + "\n");
 				//tfSend.setText(null);  //TODO put in deliverable
 			} else if(groupMode){
 				String payload = tfSend.getText();
+				
+				try
+				{
+					System.out.println("gonna try to send to these people: ");
+					System.out.println("size of list: " + selectedUsers.size());
+					System.out.println("first element: " + selectedUsers.get(0));
+					for(String user: selectedUsers) {
+						client.setProducer(user);
+						client.send(payload);
+						updateContents();
+						client.buf = "";
+					}
+				}
+				catch  (JMSException e1)
+				{
+					e1.printStackTrace();
+				}
 				textArea.append(payload + "//group msg\n");
+				
 				//tfSend.setText(null);  //TODO put in deliverable
 			} else if(broadcastMode){
 				String payload = tfSend.getText();
@@ -444,9 +476,16 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 	@Override
 	public void valueChanged(ListSelectionEvent e) {
 		String addString;
+		updateContents();
 		if( e.getSource().equals(lstLog) && e.getValueIsAdjusting()) {
 			//System.out.println("VALUE CHANGED LINE 429");
-			selectedString = (String) lstLog.getModel().getElementAt(e.getLastIndex()); // SEEs
+			selectedString = (String) lstLog.getSelectedValue();//getModel().getElementAt(e.getLastIndex()); // SEEs
+		
+		}
+		
+		else if( e.getSource().equals(lstLog) && e.getValueIsAdjusting()) {
+			selectedUsers = lstLog.getSelectedValuesList();
+			
 		}
 		
 	}

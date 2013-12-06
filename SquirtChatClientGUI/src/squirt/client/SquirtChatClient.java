@@ -39,6 +39,7 @@ public class SquirtChatClient implements MessageListener {
 	private MessageConsumer consumer;
 	private Destination destQueue;
 	public String buf;
+	private SquirtChatClientGUI gui;
 
 	
 	public SquirtChatClient(String user, ActiveMQConnection connection ) {
@@ -104,7 +105,7 @@ public class SquirtChatClient implements MessageListener {
 	// LIST OF COMMANDS
 	
 	public void send(String msg) throws JMSException {
-		producer.send(session.createTextMessage(msg));
+		producer.send(session.createTextMessage(getName() + ": " + msg));
 	}
 	
 	public void broadcast(String msg) throws JMSException{
@@ -146,6 +147,7 @@ public class SquirtChatClient implements MessageListener {
 	@SuppressWarnings("unchecked")
 	public void onMessage( Message input ) {
 		if( input instanceof ObjectMessage ) {
+			/*
 			try {
 				System.out.println(((ObjectMessage) input).getObject().toString());
 			} catch (JMSException e) {
@@ -153,6 +155,7 @@ public class SquirtChatClient implements MessageListener {
 				e.printStackTrace();
 			}
 			ArrayList<String> a = new ArrayList<String>();
+			*/
 			
 			try {
 				this.userList = ( ArrayList<String> ) ((ObjectMessage) input).getObject();
@@ -165,6 +168,7 @@ public class SquirtChatClient implements MessageListener {
 			try {
 				// save this to buffer
 				buf = ((TextMessage)input).getText();
+				gui.updateContents();
 			} catch (JMSException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -207,5 +211,9 @@ public class SquirtChatClient implements MessageListener {
 		TopicSubscriber subscriber = topicSession.createSubscriber(destQueue);
 		this.chatSubscriber = subscriber;
 		this.chatSubscriber.setMessageListener(this);
+	}
+	
+	public void setGUI( SquirtChatClientGUI gui) {
+		this.gui = gui;
 	}
 }
