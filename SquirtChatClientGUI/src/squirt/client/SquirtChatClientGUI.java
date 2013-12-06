@@ -26,6 +26,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
@@ -35,6 +36,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SpringLayout;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+
 
 
 
@@ -518,6 +520,10 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		btnSignIn.setText("Squirt Out");
 		client = wireClient(username);
 		updateContents();
+		
+		JOptionPane.showMessageDialog(null,
+				"You are now signed in" , "",
+				JOptionPane.PLAIN_MESSAGE);
 	}
 	
 	@Override
