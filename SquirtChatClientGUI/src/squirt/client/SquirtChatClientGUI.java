@@ -20,6 +20,7 @@ import javax.jms.Topic;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
+import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -55,6 +56,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 	private boolean singleMode;
 	private boolean broadcastMode;
 	private boolean groupMode;
+	private boolean groupChatMode;
 	private JTextArea textArea;
 	private JTextField tfSignIn;
 	private JScrollPane textAreaScroll;
@@ -68,9 +70,12 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 	SpringLayout sl_contentPane;
 	
 	int users = 0;
+	int chats = 0;
 	String username;
 	private String selectedString;
 	private List<String> selectedUsers;
+	private JButton btnListMode;
+	private JLabel lblLog;
 	
 	//TODO menu from above
 
@@ -113,6 +118,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 
 		return new SquirtChatClient(user, connection);
 	}
+	
 
 	
 	// end of stuff that was added from blah
@@ -206,7 +212,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 		sl_contentPane.putConstraint(SpringLayout.WEST, rdbtnGroupChat, 10, SpringLayout.WEST, contentPane);
 		rdbtnGroupChat.setMnemonic(KeyEvent.VK_C);
 		contentPane.add(rdbtnGroupChat);
-		rdbtnGroupChat.addActionListener(this);
+		//rdbtnGroupChat.addActionListener(this);
 		
 		JRadioButton rdbtnSingle = new JRadioButton("-m");
 		sl_contentPane.putConstraint(SpringLayout.NORTH, rdbtnSingle, 6, SpringLayout.SOUTH, rdbtnGroupChat);
@@ -249,7 +255,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 			}
 		});
 		
-		
+
 		
 		//////SIGN IN STUFF/////////////////////////////////////////////////////////////////////////////
 		
@@ -266,45 +272,68 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 		lstLog.setBorder(new LineBorder(new Color(0, 0, 0)));
 		contentPane.add(lstLog);
 		
-		JLabel lblLog = new JLabel("Users Logged In:");
+		lblLog = new JLabel("Users Online:");
 		sl_contentPane.putConstraint(SpringLayout.NORTH, lstLog, 6, SpringLayout.SOUTH, lblLog);
 		sl_contentPane.putConstraint(SpringLayout.NORTH, lblLog, 0, SpringLayout.NORTH, rdbtnGroupMsg);
 		sl_contentPane.putConstraint(SpringLayout.EAST, lblLog, 0, SpringLayout.EAST, btnSend);
 		contentPane.add(lblLog);
 		
-		JButton btnListMode = new JButton("Show Chatrooms");
+		btnListMode = new JButton("Toggle");  //changes list btwn all users and chatrooms
 		sl_contentPane.putConstraint(SpringLayout.WEST, btnListMode, 10, SpringLayout.WEST, contentPane);
 		sl_contentPane.putConstraint(SpringLayout.SOUTH, btnListMode, 0, SpringLayout.SOUTH, textAreaScroll);
 		sl_contentPane.putConstraint(SpringLayout.EAST, btnListMode, 0, SpringLayout.EAST, rdbtnGroupMsg);
 		contentPane.add(btnListMode);
+		//btnListMode.setVisible(false);
 		lblSignedInAs.setVisible(false);
 	}
-	
-	
+
 	private void setListeners() {
 		btnSignIn.addActionListener(this);
 		btnSend.addActionListener(this);
 		lstLog.addListSelectionListener(this);
+		btnListMode.addActionListener(this);
 	}
 	
-	public void updateContents() {
-		// update list
-		//System.out.println(client.userList.toString());
-		//System.out.println(client.userList.size());
-
+	public void updateListContents() {
+		
 		if( !client.userList.isEmpty()) {
 			Object[] o = client.userList.toArray();
 			if(o.length != users)
 			{
 				users = o.length;
-				lstLog.setListData( o);
+				lstLog.setListData(o);
 			}
 		}
-		//System.out.println(client.buf);
+
+		repaint();
+	}
+	
+	public void updateChatListContents() {
+
+		if( !client.chatList.isEmpty()) {
+			Object[] o = client.chatList.toArray();
+			lstLog.setListData(o);
+			
+			/*
+			if(o.length != chats)
+			{
+				chats = o.length;
+				lstLog.setListData(o);
+			} */
+		}
+		
+		
+		else {
+			Object[] o = {};
+			lstLog.setListData(o);
+		} 
+
+		repaint();
+	}
+	
+	public void updateTextArea() {
 		if(client.buf != null && !(client.buf.equals("")))
 			textArea.append(client.buf + "\n");
-
-		
 		repaint();
 	}
 
@@ -317,7 +346,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 
 		btnSignIn.setText("Squirt in");
 		client = wireClient("");
-		updateContents();
+		updateListContents();
 		//System.out.println(client.userList.toString());
 		
 		JOptionPane.showMessageDialog(null,
@@ -344,23 +373,22 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 				JOptionPane.PLAIN_MESSAGE);
 		
 		tfSignIn.setText("");
-		updateContents();
+		updateListContents();
 	}
 	
 	
 	//////////////////ACTIONS///////////////////////////////////////////////////////////////////////
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		//System.out.println(e.getActionCommand());
 		
 		if( e.getActionCommand() == "-m") {
 			singleMode = true;
 			broadcastMode = false;
 			groupMode = false;
+			groupChatMode = false;
 			// and everything else is false
 			
-			updateContents();
-			
+						
 			// set list selectability to 1
 			if(lstLog.getSelectionMode() != ListSelectionModel.SINGLE_SELECTION)
 				
@@ -371,26 +399,31 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 			singleMode = false;
 			broadcastMode = true;
 			groupMode = false;
-			
+			groupChatMode = false;
+			btnSend.setText("Send");
 		}
 	
 		else if( e.getActionCommand() == "-gc" ) {
-			// not sure what to do with group chat
 			singleMode = false;
 			broadcastMode = false;
 			groupMode = false;
-			if(lstLog.getSelectionMode() != ListSelectionModel.MULTIPLE_INTERVAL_SELECTION)
-				lstLog.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+			groupChatMode = true;
+			
+			if( lblLog.getText().equals("Users Online:"))
+				btnSend.setText("Make Chatroom");
+			else if( lblLog.getText().equals("Rooms Available:"))
+				btnSend.setText("Send");
 		}
 		
 		else if( e.getActionCommand() == "-gm" ) {
 			groupMode = true;
 			singleMode = false;
 			broadcastMode = false;
+			groupChatMode = false;
 			
-			// set list selectability to multiple
 			if(lstLog.getSelectionMode() != ListSelectionModel.MULTIPLE_INTERVAL_SELECTION)
 				lstLog.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+			btnSend.setText("Send");
 		}
 		else if( e.getActionCommand().equals("Squirt In")) {
 			try {
@@ -415,17 +448,45 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 				e1.printStackTrace();
 			}
 			
-		} else if( e.getActionCommand().equals("Send")){
+		}
+		
+		else if( e.getSource().equals(btnListMode) ) 
+		{
+			//client.modeSwitch = false;
+			if( lblLog.getText().equals("Users Online:")) {
+				lblLog.setText("Rooms Available:");
+				updateChatListContents();
+				lstLog.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+			} else if( lblLog.getText().equals("Rooms Available:")) {
+				lblLog.setText("Users Online:");
+				updateListContents();
+				lstLog.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+			}
+			
+		}
+		
+		else if( e.getActionCommand().equals("Make Chatroom")) 
+		{
+			String chatroomName = tfSend.getText();
+			try {
+				client.sendChatroom( chatroomName );
+				updateChatListContents();
+			} catch (JMSException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+		
+		else if( e.getActionCommand().equals("Send")) 
+		{
 			if(singleMode) {
 				String payload = tfSend.getText();
 				
-				
-				
 				try
 				{
-					client.setProducer(selectedString);
+					client.setProducer(selectedUsers.get(0));
 					client.send(payload);
-					updateContents();
+					updateTextArea();
 					client.buf = "";
 				}
 				catch (JMSException e1)
@@ -435,21 +496,17 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 				}
 				
 				
-				
 				textArea.append(client.getName() + ": " + payload + "\n");
-				//tfSend.setText(null);  //TODO put in deliverable
+				
 			} else if(groupMode){
 				String payload = tfSend.getText();
 				
 				try
 				{
-					System.out.println("gonna try to send to these people: ");
-					System.out.println("size of list: " + selectedUsers.size());
-					System.out.println("first element: " + selectedUsers.get(0));
 					for(String user: selectedUsers) {
 						client.setProducer(user);
 						client.send(payload);
-						updateContents();
+						updateTextArea();
 						client.buf = "";
 					}
 				}
@@ -457,16 +514,37 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 				{
 					e1.printStackTrace();
 				}
-				textArea.append(payload + "//group msg\n");
+				//textArea.append(payload + "//group msg\n");
 				
-				//tfSend.setText(null);  //TODO put in deliverable
+				tfSend.setText(null);  //TODO put in deliverable
 			} else if(broadcastMode){
 				String payload = tfSend.getText();
-				textArea.append(payload + "//broadcast\n");
-				//tfSend.setText(null);  //TODO put in deliverable
-			} else;
+				//textArea.append(payload + "//broadcast\n");
+				try {
+					client.broadcast(payload);
+				} catch (JMSException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				updateTextArea();
+				client.buf="";
+				tfSend.setText(null);  //TODO put in deliverable
+			} else if( groupChatMode && btnSend.getText().equals("Send")) { //broadcast to chatroom
+				String payload = tfSend.getText();
+				try {
+					client.groupChatSend(payload);
+				} catch (JMSException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			
+			} 
+			
+			else if( groupChatMode && btnSend.getText().equals("Make Chatroom") ) { //add users to chatroom
+				// do nothing
+			}
 				
-		}
+		} 
 		
 		// and so on
 	}
@@ -475,17 +553,24 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener, ListS
 
 	@Override
 	public void valueChanged(ListSelectionEvent e) {
-		String addString;
-		updateContents();
-		if( e.getSource().equals(lstLog) && e.getValueIsAdjusting()) {
-			//System.out.println("VALUE CHANGED LINE 429");
-			selectedString = (String) lstLog.getSelectedValue();//getModel().getElementAt(e.getLastIndex()); // SEEs
-		
+
+		if( e.getSource().equals(lstLog) && e.getValueIsAdjusting() ) { //&& !groupChatMode) {
+			updateListContents();
+			selectedUsers = lstLog.getSelectedValuesList();
 		}
 		
-		else if( e.getSource().equals(lstLog) && e.getValueIsAdjusting()) {
-			selectedUsers = lstLog.getSelectedValuesList();
-			
+	
+		else if( groupChatMode && e.getSource().equals(lstLog)) {  //selection of List of chat rooms
+			String chatroom = (String) lstLog.getSelectedValue();
+			try {
+				client.setChatSubscriber(chatroom);
+				client.setChatPublisher(chatroom);
+			} catch (JMSException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+			updateChatListContents();
 		}
 		
 	}

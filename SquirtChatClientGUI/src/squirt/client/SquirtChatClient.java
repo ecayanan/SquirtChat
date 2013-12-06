@@ -26,6 +26,7 @@ public class SquirtChatClient implements MessageListener {
 	private Session session;
 	private ActiveMQConnection connection;
 	public ArrayList<String> userList = new ArrayList<String>();
+	public ArrayList<String> chatList = new ArrayList<String>();
 	private String user; //Using a string for user
 	
 	private TopicSession topicSession;
@@ -40,6 +41,7 @@ public class SquirtChatClient implements MessageListener {
 	private Destination destQueue;
 	public String buf;
 	private SquirtChatClientGUI gui;
+	// public boolean modeSwitch; // if true, want userList
 
 	
 	public SquirtChatClient(String user, ActiveMQConnection connection ) {
@@ -109,7 +111,7 @@ public class SquirtChatClient implements MessageListener {
 	}
 	
 	public void broadcast(String msg) throws JMSException{
-		broadcastPublisher.send(session.createTextMessage(msg));
+		broadcastPublisher.send(session.createTextMessage(getName() + ": " + msg));
 	}
 	public void groupChatSend(String msg) throws JMSException
 	{
@@ -126,7 +128,8 @@ public class SquirtChatClient implements MessageListener {
 		Destination oldDest = getProducer();
 		setProducer("server");
 		producer.send(session.createTextMessage("addChat;"+msg));
-		setProducer(((Queue) oldDest).getQueueName());		
+		setProducer(((Queue) oldDest).getQueueName());
+		gui.updateChatListContents();
 	}
 	public void getUserList() throws JMSException{
 		Destination oldDest = getProducer();
@@ -146,16 +149,7 @@ public class SquirtChatClient implements MessageListener {
 	
 	@SuppressWarnings("unchecked")
 	public void onMessage( Message input ) {
-		if( input instanceof ObjectMessage ) {
-			/*
-			try {
-				System.out.println(((ObjectMessage) input).getObject().toString());
-			} catch (JMSException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			ArrayList<String> a = new ArrayList<String>();
-			*/
+		if( input instanceof ObjectMessage ) { //&& modeSwitch ) {
 			
 			try {
 				this.userList = ( ArrayList<String> ) ((ObjectMessage) input).getObject();
@@ -164,11 +158,22 @@ public class SquirtChatClient implements MessageListener {
 				e.printStackTrace();
 			}
 		}
+	/*
+		else if( input instanceof ObjectMessage )// && !modeSwitch ) {
+			try {
+				this.chatList = ( ArrayList<String> ) ((ObjectMessage) input).getObject();
+			} catch (JMSException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	*/
+		
 		else if( input instanceof TextMessage )
 			try {
 				// save this to buffer
 				buf = ((TextMessage)input).getText();
-				gui.updateContents();
+				gui.updateTextArea();
 			} catch (JMSException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -189,9 +194,17 @@ public class SquirtChatClient implements MessageListener {
 	 */
 	public void setProducer(String user) throws JMSException
 	{
-		Queue destQueue = session.createQueue(user);
-		MessageProducer producer = session.createProducer(destQueue);
-		this.producer = producer;
+		if( !getName().equals(user)) {
+			Queue destQueue = session.createQueue(user);
+			MessageProducer producer = session.createProducer(destQueue);
+			this.producer = producer;
+		}
+		else
+		{
+			Queue destQueue = session.createQueue("Narnia");
+			MessageProducer producer = session.createProducer(destQueue);
+			this.producer = producer;
+		}
 	}
 	
 	public Destination getProducer() throws JMSException {
@@ -202,6 +215,7 @@ public class SquirtChatClient implements MessageListener {
 	{
 		Topic destQueue = topicSession.createTopic(chatRoom);
 		TopicPublisher publisher = topicSession.createPublisher(destQueue);
+
 		this.chatPublisher = publisher;
 	}
 	
