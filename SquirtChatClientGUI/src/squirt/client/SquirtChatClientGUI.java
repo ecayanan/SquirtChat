@@ -1,31 +1,12 @@
 package squirt.client;
 
-import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
-import javax.swing.SpringLayout;
-import javax.swing.JButton;
-import javax.swing.JTextField;
-
-import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-
-import javax.swing.ButtonGroup;
-import javax.swing.DefaultListModel;
-import javax.swing.JLabel;
-import javax.swing.JTextPane;
-import javax.swing.JTextArea;
-import javax.swing.JRadioButton;
-import javax.swing.JList;
-import javax.swing.ListSelectionModel;
-
 import java.net.URISyntaxException;
-import java.util.Scanner;
 
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -37,12 +18,24 @@ import javax.jms.Topic;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
-
-import org.apache.activemq.ActiveMQConnection;
-
+import javax.swing.ButtonGroup;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JMenu;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.SpringLayout;
+import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
-import java.awt.Color;
+import org.apache.activemq.ActiveMQConnection;
 
 //import squirt.client.SquirtChatClientApplication.CloseHook;
 
@@ -55,11 +48,16 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 	private boolean groupMode;
 	private JTextArea textArea;
 	private JTextField tfSignIn;
+	private JScrollPane textAreaScroll;
+	private JButton btnSend;
 	private JButton btnSignIn;
 	private JLabel lblSignedIn;
 	private SquirtChatClient client;
 	private DefaultListModel listModel;
 	private JList lstLog;
+	private JMenu menu; 
+	
+	//TODO menu from above
 
 	// ADDED FROM SQUIRTCHATCLIENT APPLICATION
 	
@@ -141,6 +139,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 	public SquirtChatClientGUI() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
+		setTitle("SquirtChat");
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		contentPane.setSize(new Dimension( 800, 600));
@@ -148,19 +147,27 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		SpringLayout sl_contentPane = new SpringLayout();
 		contentPane.setLayout(sl_contentPane);
 
-		JButton btnSend = new JButton("Send");
+		//SEND BUTTON////////////////////////////////////////////////////////////////////////////
+		btnSend = new JButton("Send");//TODO
 		btnSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if(singleMode) {
 					String payload = tfSend.getText();
-					textArea.append(payload);
-				}
+					textArea.append(payload + "//single msg\n");
+					//tfSend.setText(null);  //TODO put in deliverable
+				} else if(groupMode){
+					String payload = tfSend.getText();
+					textArea.append(payload + "//group msg\n");
+					//tfSend.setText(null);  //TODO put in deliverable
+				} else if(broadcastMode){
+					String payload = tfSend.getText();
+					textArea.append(payload + "//broadcast\n");
+					//tfSend.setText(null);  //TODO put in deliverable
+				} else;
 					
 			}
 		});
 		
-		
-		/////////////////////////////////////////////////
 		tfSend = new JTextField();
 		sl_contentPane.putConstraint(SpringLayout.WEST, tfSend, 18, SpringLayout.WEST, contentPane);
 		sl_contentPane.putConstraint(SpringLayout.SOUTH, tfSend, -1, SpringLayout.SOUTH, contentPane);
@@ -168,25 +175,37 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		contentPane.add(tfSend);
 		tfSend.setColumns(10);
 		
+		tfSend.addActionListener(new ActionListener(){ // TODO allows for enter to be used for button
+															//refactor / re-place code
+			public void actionPerformed(ActionEvent e){
+				btnSend.doClick();
+			}
+		});
+		
+		///TEXT AREA////////////////////////////////////////////////////////////////
+		
 		textArea = new JTextArea();
 		textArea.setEnabled(false);
 		textArea.setEditable(false);
 		textArea.setWrapStyleWord(true);
 		textArea.setLineWrap(true);
-		sl_contentPane.putConstraint(SpringLayout.NORTH, textArea, 23, SpringLayout.NORTH, contentPane);
-		sl_contentPane.putConstraint(SpringLayout.SOUTH, textArea, -18, SpringLayout.NORTH, tfSend);
-		sl_contentPane.putConstraint(SpringLayout.EAST, textArea, -138, SpringLayout.EAST, contentPane);
-		contentPane.add(textArea);
+		textAreaScroll = new JScrollPane(textArea);
+		textAreaScroll.setPreferredSize(new Dimension(300,300));
+		sl_contentPane.putConstraint(SpringLayout.NORTH, textAreaScroll, 23, SpringLayout.NORTH, contentPane);
+		sl_contentPane.putConstraint(SpringLayout.SOUTH, textAreaScroll, -18, SpringLayout.NORTH, tfSend);
+		sl_contentPane.putConstraint(SpringLayout.EAST, textAreaScroll, -138, SpringLayout.EAST, contentPane);
+		contentPane.add(textAreaScroll);
+		
 		
 
 		sl_contentPane.putConstraint(SpringLayout.SOUTH, btnSend, 0, SpringLayout.SOUTH, contentPane);
 		sl_contentPane.putConstraint(SpringLayout.EAST, btnSend, 0, SpringLayout.EAST, contentPane);
 		contentPane.add(btnSend);
 		
-		///BUTTONS/////////////////////////////////////////
+		///RADIO BUTTONS/////////////////////////////////////////
 		
 		JRadioButton rdbtnGroupMsg = new JRadioButton("-gm");
-		sl_contentPane.putConstraint(SpringLayout.WEST, textArea, 14, SpringLayout.EAST, rdbtnGroupMsg);
+		sl_contentPane.putConstraint(SpringLayout.WEST, textAreaScroll, 14, SpringLayout.EAST, rdbtnGroupMsg);
 		sl_contentPane.putConstraint(SpringLayout.NORTH, rdbtnGroupMsg, 72, SpringLayout.NORTH, contentPane);
 		sl_contentPane.putConstraint(SpringLayout.WEST, rdbtnGroupMsg, 10, SpringLayout.WEST, contentPane);
 		rdbtnGroupMsg.setMnemonic(KeyEvent.VK_G);
@@ -196,21 +215,21 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		JRadioButton rdbtnGroupChat = new JRadioButton("-gc");
 		sl_contentPane.putConstraint(SpringLayout.NORTH, rdbtnGroupChat, 6, SpringLayout.SOUTH, rdbtnGroupMsg);
 		sl_contentPane.putConstraint(SpringLayout.WEST, rdbtnGroupChat, 10, SpringLayout.WEST, contentPane);
-		rdbtnGroupMsg.setMnemonic(KeyEvent.VK_C);
+		rdbtnGroupChat.setMnemonic(KeyEvent.VK_C);
 		contentPane.add(rdbtnGroupChat);
 		rdbtnGroupChat.addActionListener(this);
 		
 		JRadioButton rdbtnSingle = new JRadioButton("-m");
 		sl_contentPane.putConstraint(SpringLayout.NORTH, rdbtnSingle, 6, SpringLayout.SOUTH, rdbtnGroupChat);
 		sl_contentPane.putConstraint(SpringLayout.WEST, rdbtnSingle, 10, SpringLayout.WEST, contentPane);
-		rdbtnGroupMsg.setMnemonic(KeyEvent.VK_M);
+		rdbtnSingle.setMnemonic(KeyEvent.VK_M);
 		contentPane.add(rdbtnSingle);
 		rdbtnSingle.addActionListener(this);
 		
 		JRadioButton rdbtnBroadcast = new JRadioButton("-b");
 		sl_contentPane.putConstraint(SpringLayout.NORTH, rdbtnBroadcast, 7, SpringLayout.SOUTH, rdbtnSingle);
 		sl_contentPane.putConstraint(SpringLayout.WEST, rdbtnBroadcast, 10, SpringLayout.WEST, contentPane);
-		rdbtnGroupMsg.setMnemonic(KeyEvent.VK_B);
+		rdbtnBroadcast.setMnemonic(KeyEvent.VK_B);
 		contentPane.add(rdbtnBroadcast);
 		rdbtnBroadcast.addActionListener(this);
 		
@@ -220,6 +239,8 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		group.add(rdbtnSingle);
 		group.add(rdbtnBroadcast);
 		
+		/////////SIGN IN BUTTONS /////////////////////////////////////////////////////////////////////
+		
 		tfSignIn = new JTextField();
 		sl_contentPane.putConstraint(SpringLayout.NORTH, tfSignIn, 0, SpringLayout.NORTH, contentPane);
 		contentPane.add(tfSignIn);
@@ -228,19 +249,28 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		btnSignIn = new JButton("Squirt In");
 		sl_contentPane.putConstraint(SpringLayout.NORTH, btnSignIn, 11, SpringLayout.SOUTH, tfSignIn);
 		sl_contentPane.putConstraint(SpringLayout.WEST, tfSignIn, 0, SpringLayout.WEST, btnSignIn);
-		sl_contentPane.putConstraint(SpringLayout.WEST, btnSignIn, 17, SpringLayout.EAST, textArea);
+		sl_contentPane.putConstraint(SpringLayout.WEST, btnSignIn, 17, SpringLayout.EAST, textAreaScroll);
 		sl_contentPane.putConstraint(SpringLayout.EAST, btnSignIn, 0, SpringLayout.EAST, btnSend);
 		contentPane.add(btnSignIn);
+		
+		tfSignIn.addActionListener(new ActionListener(){ // TODO allows for enter to be used for button
+														//refactor / re-place code
+			public void actionPerformed(ActionEvent e){
+				btnSignIn.doClick();
+			}
+		});
+		
+		//////SIGN IN STUFF/////////////////////////////////////////////////////////////////////////////
 		
 		JLabel lblSignedInAs = new JLabel("Squirted In As: ");
 		sl_contentPane.putConstraint(SpringLayout.NORTH, lblSignedInAs, 2, SpringLayout.NORTH, tfSignIn);
 		sl_contentPane.putConstraint(SpringLayout.WEST, lblSignedInAs, 0, SpringLayout.WEST, rdbtnGroupMsg);
 		contentPane.add(lblSignedInAs);
-		
+				
 		listModel = new DefaultListModel();
 		lstLog = new JList(listModel);
 		sl_contentPane.putConstraint(SpringLayout.WEST, lstLog, 0, SpringLayout.WEST, tfSignIn);
-		sl_contentPane.putConstraint(SpringLayout.SOUTH, lstLog, 0, SpringLayout.SOUTH, textArea);
+		sl_contentPane.putConstraint(SpringLayout.SOUTH, lstLog, 0, SpringLayout.SOUTH, textAreaScroll);
 		sl_contentPane.putConstraint(SpringLayout.EAST, lstLog, -2, SpringLayout.EAST, contentPane);
 		lstLog.setBorder(new LineBorder(new Color(0, 0, 0)));
 		contentPane.add(lstLog);
@@ -253,14 +283,20 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		
 		JButton btnListMode = new JButton("Show Chatrooms");
 		sl_contentPane.putConstraint(SpringLayout.WEST, btnListMode, 10, SpringLayout.WEST, contentPane);
-		sl_contentPane.putConstraint(SpringLayout.SOUTH, btnListMode, 0, SpringLayout.SOUTH, textArea);
+		sl_contentPane.putConstraint(SpringLayout.SOUTH, btnListMode, 0, SpringLayout.SOUTH, textAreaScroll);
 		sl_contentPane.putConstraint(SpringLayout.EAST, btnListMode, 0, SpringLayout.EAST, rdbtnGroupMsg);
 		contentPane.add(btnListMode);
 		lblSignedInAs.setVisible(false);
 		//createComponents();
 		//setListeners();
 	}
+
 	
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+	//////////////////DO NOT CROSS////////////////////////////////////////////////////////
+	
+	//////////////////////////////////////////////////////////////////////////////////////
 	private void createComponents() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
@@ -270,24 +306,30 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		setContentPane(contentPane);
 		SpringLayout sl_contentPane = new SpringLayout();
 		contentPane.setLayout(sl_contentPane);
-
-		JButton btnSend = new JButton("Send");
+		
+/*
+		final JButton btnSend = new JButton("Send");
 		btnSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if(singleMode) {
 					String payload = tfSend.getText();
 					textArea.append(payload);
+				} else if(groupMode) {
+					
+				} else if(broadcastMode){
+					
 				}
+				else;
 					
 			}
 		});
-		
+*/
 		
 		/////////////////////////////////////////////////
 		tfSend = new JTextField();
 		sl_contentPane.putConstraint(SpringLayout.WEST, tfSend, 18, SpringLayout.WEST, contentPane);
 		sl_contentPane.putConstraint(SpringLayout.SOUTH, tfSend, -1, SpringLayout.SOUTH, contentPane);
-		sl_contentPane.putConstraint(SpringLayout.EAST, tfSend, -6, SpringLayout.WEST, btnSend);
+		//TODO sl_contentPane.putConstraint(SpringLayout.EAST, tfSend, -6, SpringLayout.WEST, btnSend);
 		contentPane.add(tfSend);
 		tfSend.setColumns(10);
 		
@@ -302,9 +344,9 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		contentPane.add(textArea);
 		
 
-		sl_contentPane.putConstraint(SpringLayout.SOUTH, btnSend, 0, SpringLayout.SOUTH, contentPane);
-		sl_contentPane.putConstraint(SpringLayout.EAST, btnSend, 0, SpringLayout.EAST, contentPane);
-		contentPane.add(btnSend);
+		//TODO sl_contentPane.putConstraint(SpringLayout.SOUTH, btnSend, 0, SpringLayout.SOUTH, contentPane);
+		//sl_contentPane.putConstraint(SpringLayout.EAST, btnSend, 0, SpringLayout.EAST, contentPane);
+		//contentPane.add(btnSend);
 		
 		///BUTTONS/////////////////////////////////////////
 		
@@ -352,7 +394,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		sl_contentPane.putConstraint(SpringLayout.NORTH, btnSignIn, 11, SpringLayout.SOUTH, tfSignIn);
 		sl_contentPane.putConstraint(SpringLayout.WEST, tfSignIn, 0, SpringLayout.WEST, btnSignIn);
 		sl_contentPane.putConstraint(SpringLayout.WEST, btnSignIn, 17, SpringLayout.EAST, textArea);
-		sl_contentPane.putConstraint(SpringLayout.EAST, btnSignIn, 0, SpringLayout.EAST, btnSend);
+		//TODO sl_contentPane.putConstraint(SpringLayout.EAST, btnSignIn, 0, SpringLayout.EAST, btnSend);
 		contentPane.add(btnSignIn);
 		
 		JLabel lblSignedInAs = new JLabel("Squirted In As: ");
@@ -371,7 +413,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		JLabel lblLog = new JLabel("Users Logged In:");
 		sl_contentPane.putConstraint(SpringLayout.NORTH, lstLog, 6, SpringLayout.SOUTH, lblLog);
 		sl_contentPane.putConstraint(SpringLayout.NORTH, lblLog, 0, SpringLayout.NORTH, rdbtnGroupMsg);
-		sl_contentPane.putConstraint(SpringLayout.EAST, lblLog, 0, SpringLayout.EAST, btnSend);
+		//TODO sl_contentPane.putConstraint(SpringLayout.EAST, lblLog, 0, SpringLayout.EAST, btnSend);
 		contentPane.add(lblLog);
 		
 		JButton btnListMode = new JButton("Show Chatrooms");
@@ -428,6 +470,9 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 	
 		else if( e.getActionCommand() == "-gc" ) {
 			// not sure what to do with group chat
+			singleMode = false;
+			broadcastMode = false;
+			groupMode = false;
 		}
 		
 		else if( e.getActionCommand() == "-gm" ) {
@@ -450,7 +495,7 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		
 		else if( e.getActionCommand() == "Squirt Out") {
 			// tell server we're logging off
-			// register clsoe hook
+			// register close hook
 			// exit everything out
 		}
 		
