@@ -102,21 +102,8 @@ public class SquirtChatClientGUI extends JFrame implements ActionListener {
 		connection.start();
 		CloseHook.registerCloseHook(connection);
 	
-		// for communication via queues (ie one-on-one communication)
-		Session session = connection.createSession(false,
-				Session.AUTO_ACKNOWLEDGE);
-	
-		// for communication via topics (broadcasting and subset broadcasting ie chatrooms)
-		TopicSession topicSession = connection.createTopicSession( false, 
-				Session.AUTO_ACKNOWLEDGE);
-		Topic topic = topicSession.createTopic("TESTNAME");
-		TopicSubscriber subscriber = topicSession.createSubscriber(topic);
-		TopicPublisher publisher = topicSession.createPublisher(topic);
-	
-		Queue destQueue = session.createQueue(user);
-		MessageProducer producer = session.createProducer(destQueue);
-		MessageConsumer consumer = session.createConsumer(destQueue);
-		return new SquirtChatClient(producer, session, subscriber, publisher, connection, user,consumer,topicSession);
+
+		return new SquirtChatClient(user, connection);
 	}
 
 	

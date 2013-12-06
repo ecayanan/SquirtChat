@@ -127,7 +127,7 @@ public class SquirtChatClientApplication {
     			System.out.println("Dun goofed");
 
     		}
-    		while(!message.equals("quit"))
+    		while(!message.equals("quit") || !message.equals("-q") || !message.equals("QUIT"))
     		{
 	    		message = scanIn.nextLine();
 	    		client.groupChatSend(message);
@@ -137,7 +137,7 @@ public class SquirtChatClientApplication {
 	
 	private static void IMessage(String message, Scanner scanIn, SquirtChatClient client) throws JMSException
 	{
-		while(!message.equals("quit"))
+		while(!message.equals("quit") || !message.equals("-q") || !message.equals("QUIT"))
 		{
 			System.out.println("What message would you like to send?");
 			message = scanIn.nextLine();
@@ -152,7 +152,7 @@ public class SquirtChatClientApplication {
 	}
 	private static void GMessage(String message, Scanner scanIn, SquirtChatClient client) throws JMSException
 	{
-		while(!message.equals("quit"))
+		while(!message.equals("quit") || !message.equals("-q") || !message.equals("QUIT"))
 		{
 	   		System.out.println("What message would you like to send?");
 			message = scanIn.nextLine();
@@ -194,7 +194,7 @@ public class SquirtChatClientApplication {
 	
 	private static void broadcastMessage(String message, Scanner scanIn, SquirtChatClient client) throws JMSException
 	{
-		while(!message.equals("quit"))
+		while(!message.equals("quit") || !message.equals("-q") || !message.equals("QUIT"))
 		{
 			//client.setPublisher("TESTNAME");
 			//client.setSubscriber("TESTNAME");	        		

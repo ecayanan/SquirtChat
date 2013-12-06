@@ -1,12 +1,15 @@
 package squirt.client;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
+import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
@@ -19,62 +22,146 @@ import org.apache.activemq.ActiveMQConnection;
 
 
 public class SquirtChatClient implements MessageListener {
-	private MessageProducer producer;
-	private MessageConsumer consumer;
+
 	private Session session;
-	private TopicSubscriber subscriber;
-	private TopicPublisher publisher;
 	private ActiveMQConnection connection;
-	private List<String> userList;
+	private ArrayList<String> userList;
 	private String user; //Using a string for user
+	
 	private TopicSession topicSession;
 	
-	public SquirtChatClient(MessageProducer producer, Session session, 
-			TopicSubscriber subscriber, TopicPublisher publisher, 
-			ActiveMQConnection connection, String user, MessageConsumer consumer, TopicSession topicSession ) {
+	private TopicSubscriber chatSubscriber;
+	private TopicPublisher chatPublisher;
+	private TopicSubscriber broadcastSubscriber;
+	private TopicPublisher broadcastPublisher;
+	private TopicSubscriber loginSubscriber; // receives a list of people currently logged in from the server
+	private MessageProducer producer;
+	private MessageConsumer consumer;
+	private Destination destQueue;
+
+	
+	public SquirtChatClient(String user, ActiveMQConnection connection ) {
+		
 		super();
-		this.producer = producer;
-		this.consumer = consumer;
-		this.session = session;
-		this.subscriber = subscriber;
-		this.publisher = publisher;
 		this.connection = connection;
-		this.topicSession = topicSession;
 		this.user = user;
-		/*try {
-			subscriber.setMessageListener(this);
+		
+		// create a topic session, session, and destination queue
+		try {
+			this.topicSession = connection.createTopicSession( false, 
+					Session.AUTO_ACKNOWLEDGE);
+			this.session = connection.createSession(false,
+					Session.AUTO_ACKNOWLEDGE);
+			this.destQueue = session.createQueue(user);
+		} catch (JMSException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+		// creating a broadcast subscriber / publisher
+		try {
+			Topic broadcastTopic = topicSession.createTopic("BROADCAST");
+			this.broadcastSubscriber = topicSession.createSubscriber(broadcastTopic);
+			this.broadcastPublisher = topicSession.createPublisher(broadcastTopic);
+			this.broadcastSubscriber.setMessageListener(this);
 		} catch (JMSException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}*/
+		}
 		
+		// creating a chatroom subscriber / publisher
 		try {
-			consumer.setMessageListener(this);
-			subscriber.setMessageListener(this);
-
+			Topic chatTopic = topicSession.createTopic("DEFAULTCHATROOM");
+			this.chatSubscriber = topicSession.createSubscriber(chatTopic);
+			this.chatPublisher = topicSession.createPublisher(chatTopic);
+			this.chatSubscriber.setMessageListener(this);
+		} catch (JMSException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// create message consumer / producer
+		try {
+			this.consumer = session.createConsumer(destQueue);
+			this.producer = session.createProducer(destQueue);
+			this.consumer.setMessageListener(this);
 		} catch (JMSException e ) {
 			e.printStackTrace();
 		}
-	} 
-	
-	public void send(String msg) throws JMSException {
-		//producer.send(session.createTextMessage(msg));
-		publisher.send(session.createTextMessage(msg));
-	}
-	
-	public void sendUser(String msg) throws JMSException{
-		producer.send(session.createTextMessage(msg));
-	}
-	
-	public void onMessage( Message input ) {
-		TextMessage retval = (TextMessage) input;
+		
+		// tell server I wish to log in
 		try {
-			System.out.println("client received message: " + retval.getText());
+			sendUser(user);
 		} catch (JMSException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+
+	} 
+	
+	// LIST OF COMMANDS
+	
+	public void send(String msg) throws JMSException {
+		producer.send(session.createTextMessage(msg));
 	}
+	
+	public void broadcast(String msg) throws JMSException{
+		broadcastPublisher.send(session.createTextMessage(msg));
+	}
+	public void groupChatSend(String msg) throws JMSException
+	{
+		chatPublisher.send(session.createTextMessage(msg));
+	}
+	public void sendUser(String msg) throws JMSException{
+		Destination oldDest = getProducer();
+		setProducer("server");
+		producer.send(session.createTextMessage("addUser;"+msg));
+		setProducer(((Queue) oldDest).getQueueName());
+	}
+	public void sendChatroom(String msg) throws JMSException
+	{
+		Destination oldDest = getProducer();
+		setProducer("server");
+		producer.send(session.createTextMessage("addChat;"+msg));
+		setProducer(((Queue) oldDest).getQueueName());		
+	}
+	public void getUserList() throws JMSException{
+		Destination oldDest = getProducer();
+		setProducer("server");
+		send("getList;"+getName());
+		setProducer(((Queue) oldDest).getQueueName());
+	}
+	public void getChatList() throws JMSException 
+	{
+		Destination oldDest = getProducer();
+		setProducer("server");
+		send("getChat;"+getName());
+		setProducer(((Queue) oldDest).getQueueName());
+	}
+	
+	// Listener method
+	
+	public void onMessage( Message input ) {
+		if( input instanceof ObjectMessage ) {
+			System.out.println("This is what you requested: ");
+			try {
+				System.out.println(((ObjectMessage) input).getObject());
+			} catch (JMSException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		else if( input instanceof TextMessage )
+			try {
+				System.out.println(((TextMessage)input).getText());
+			} catch (JMSException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	}
+	
+	// setting names
 	public void setName(String usr){
 		this.user = usr;
 	}
@@ -82,6 +169,7 @@ public class SquirtChatClient implements MessageListener {
 	{
 		return this.user;
 	}
+	
 	/*
 	 * Sets the producer to send to the proper different user queue
 	 */
@@ -91,17 +179,23 @@ public class SquirtChatClient implements MessageListener {
 		MessageProducer producer = session.createProducer(destQueue);
 		this.producer = producer;
 	}
-	public void setPublisher(String chatRoom) throws JMSException
+	
+	public Destination getProducer() throws JMSException {
+		return producer.getDestination();
+	}
+	
+	public void setChatPublisher(String chatRoom) throws JMSException
 	{
 		Topic destQueue = topicSession.createTopic(chatRoom);
 		TopicPublisher publisher = topicSession.createPublisher(destQueue);
-		this.publisher = publisher;
+		this.chatPublisher = publisher;
 	}
-	public void setSubscriber(String chatRoom) throws JMSException
+	
+	public void setChatSubscriber(String chatRoom) throws JMSException
 	{
 		Topic destQueue = topicSession.createTopic(chatRoom);		
 		TopicSubscriber subscriber = topicSession.createSubscriber(destQueue);
-		this.subscriber = subscriber;
-		this.subscriber.setMessageListener(this);
+		this.chatSubscriber = subscriber;
+		this.chatSubscriber.setMessageListener(this);
 	}
 }
